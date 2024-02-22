@@ -1,7 +1,6 @@
+import sys
 import csv
-import heapq
-
-FILE_NAME = "form_responses.csv"
+import pandas
 
 LEADER_STRING_0 = "I go with the flow"
 LEADER_STRING_1 = "I don't usually lead, but I'm comfortable speaking up and talking about my ideas"
@@ -12,7 +11,7 @@ LEADER_STRING_2 = "I usually take charge"
 ######################################################
 # A member in build-a-band
 class bab_member:
-    def __init__(self, name , instrument, genre, leader, availability):
+    def __init__(self, name , instrument, genre, leader, availability, excel_data):
         self.type = "member"
         self.name = name # string
         self.instrument = set(instrument.replace(' ', '').split(',')) # instrument
@@ -48,6 +47,11 @@ class bab_member:
         self.compatibilityScore = -1 # Compatiblitiy score
         self.mostCompatible = 0 # Highest compatibility member OR group
         self.groups = []
+
+        # EXCEL DATA
+        self.excel_data = []
+        for line in excel_data:
+            self.excel_data.append(line)
 
     def display(self):
         print("name: ", self.name, "\ninstrument: ", self.
@@ -138,15 +142,21 @@ class bab_group:
 
 
     def display(self):
-        display_string = self.name + "\nDrums: "
-        if (self.drums): display_string += self.drums.name + "\nBass: "
-        else: display_string += "Empty\n"
-        if (self.bass): display_string += self.bass.name + "\nRhythm: "
-        else: display_string += "Empty\n"
-        if (self.rhythm): display_string += self.rhythm.name + "\nMelody: "
-        else: display_string += "Empty\n"
-        if (self.melody): display_string += self.melody.name + "\n"
-        else: display_string += "Empty\n"
+        display_string = self.name + "\nDrums:  "
+        if (self.drums): display_string += self.drums.name
+        else: display_string += "Empty"
+        display_string += "\nBass:   "
+
+        if (self.bass): display_string += self.bass.name
+        else: display_string += "Empty"
+        display_string += "\nRhythm: "
+
+        if (self.rhythm): display_string += self.rhythm.name
+        else: display_string += "Empty"
+        display_string += "\nMelody: "
+        if (self.melody): display_string += self.melody.name
+        else: display_string += "Empty"
+        display_string += "\n"
         print(display_string)
         #print(self.name, "\nDrums: ", self.drums.name, "\nBass: ", self.bass.name, "\nRhythm: ", self.rhythm.name, "\nMelody: ", self.melody.name, "\n")
 
@@ -216,7 +226,7 @@ def find_most_compatible(member, member_list, group_list):
     # do members list first
     # Member list ie. making new groups is only available as long as we are below the max number of possible grousp
     for compatible_member in member_list:
-        if (compatible_member == member): continue
+        if (compatible_member == member or compatible_member.availability == 0): continue
 
         compatiblity = (len(list(member.genre & compatible_member.genre)))
         
@@ -352,10 +362,19 @@ def main():
 
 
     # create our membber list
+    
+    print(len(sys.argv))
+    if (len (sys.argv) != 2): 
+        print("NO FORM RESPONSE ARGUMENT PROVIDED TO SCRIPT. Re-rerunscript using python3 bab_sorting.py form_responses.csv")
+        return -1
+    
+    FILE_NAME = sys.argv[1]
+
     with open(FILE_NAME, mode ='r')as file:
         csvFile = csv.reader(file)
         for lines in csvFile:
-            member_list.append(bab_member(lines[1], lines[2], lines[3], lines[4], int(lines[5])))
+            if (lines[0] == "Timestamp"): continue
+            member_list.append(bab_member(lines[1], lines[2], lines[3], lines[4], int(lines[5]), lines))
             #print(lines) 
             #print("\n")
 
@@ -383,134 +402,24 @@ def main():
     
     print("DONE!")
 
-    
+    for member in member_list:
+        for line in member.excel_data:
+            print(line)
 
-    # member list now sorted by compatibility; assign first user to a group then sort again
-
-    
-
-    # for member in member_list:
-        #print("MEMBER: " + member.name + "\nMOST COMPATIBLE MEMBER / GROUP: " + member.mostCompatible.name + "\nSCORE:" + str(member.compatibilityScore))
+    #TODO: EXCEL OUTPUT OF SCRIPT
 
     for group in group_list:
         group.display()
-
-
-
-
-
-
-    # # sort member list alphabetically
-    # #member_list.sort(key=lambda x: x.name)
-
-
-    # # first find genre compatiblity between people
-    # create_compatibility_list(member_list)
-            
-
-    #     #print("Member: ", member.name, "is most compatible with member: ", member_list[list(member.compatibility.keys())[0]].name)
-
-
-    # #sort the member list based on member compatibility
-    # #print(member_list[0].compatibility[list(member_list[0].compatibility)[0]])
-    # #if you're reading this, I'm so sorry
-    # member_list.sort(key=lambda x: x.compatibility[list(x.compatibility)[0]])
-    # # for member in member_list:
-    # #     print(member.name)
-    # # return
-
-
-    # for member in member_list:
-    #     # Place members into groups based on compatibility
-    #     # -----------------------------------------------------------
-    #     print("CREATING FOR MEMBER: ", member.name, '\n')
-    #     print(member.compatibility)
-    #     for member_id in sorted(member.compatiblity.items(), key=lambda item:item[1], reverse=True):
-    #         member_id = member_id[0]
-    #         print("MEMBER ID: ", member_id)
-    #         print("COMPAITBILITY TEST WITH: ", member_list[member_id].name, '\n')
-    #         print("MEMBER GROUSP:", member.groups)
-    #         if (member_list[member_id] == member): continue
-
-    #         # if compatible member is already in a group, try to add current member to it
-    #         if len(member_list[member_id].groups) != 0:
-    #             for group in member_list[member_id].groups:
-    #                 if group.add_member(member): 
-    #                     register_to_group(member, group)
-    #                     break
-
-    #         # compatible member is not in any groups; create new one
-    #         else:
-    #             # try making new group with member
-    #             new_group = bab_group("BAB" + str(group_id))
-                
-    #             # add this member to the group
-    #             if new_group.add_member(member) == False: print("CRITICAL ERROR")
-
-    #             # try adding member to the group
-    #             if (new_group.add_member(member_list[member_id])): 
-    #                 print ("New group sucessfully created.")
-    #                 register_to_group(member, new_group)
-    #                 register_to_group(member_list[member_id], new_group)
-    #                 bab_groups.append(new_group)
-    #                 group_id = group_id + 1
-
-
-    #         # if we were not able to add the member to an existing group, 
-    #         if (len(member.groups) != 0): 
-    #             print("Added member to group")
-    #             break
-
-    #         # create new group
-     
-
-    #     #for key in member.compatibility:
-    #         #print(member.compatibility[key])
-    #     # list whoever is most compatibile 
-    #     # then die
-            
-    
-    # # fill in remaining groups with missing members
-    # for group in bab_groups:
-    #     # create new compatiblity list based on non-member members members who need a team
-    #     group.display()
-    #     group.get_compatiblity()
-                
-    
-    #for member in member_list:
-        #find most compatible members in member list
-
-        
-        #print("most compatibile member: ", member_list[find_max(member.compatiblity, 1)].name)
-
-            
-        #member.display_compatiblity()
-
-
-
-
-
-
-
-
-
-    # create preliminary groups using drummers as base
-    # initially start with trying to fill one person into each group
-    # only fill solo drummers in for multiple (DRUMS ONLY)
-            
-    # for member in member_list:
-    #     if len(member.instrument) == 1 and 'Drums' in member.instrument:
-    #         for group in member.availability:
-    #             bab_groups.append(bab_group(member))
-
-    # for group in bab_groups:
-    #     group.display()
-
-
-
-#Display overlap between members in genre preferences
-        
-
+        with pandas.ExcelWriter('BABgroups.xlsx', engine='xlsxwriter') as writer:
+            dataframe = 0
+            colData = []
+            for member, colIndex in enumerate(group.members):
+                for line in member.excel_data:
+                    colData[colIndex]
+                    
+                dataframe = pandas.DataFrame([line])    
+                    
+                dataframe.to_excel(writer, sheet_name=group.name)
 
 
 #group sorting algorithm
