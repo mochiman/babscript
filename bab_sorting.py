@@ -11,7 +11,7 @@ LEADER_STRING_2 = "I usually take charge"
 ######################################################
 # A member in build-a-band
 class bab_member:
-    def __init__(self, name , instrument, genre, leader, availability, excel_data):
+    def __init__(self, name , instrument, genre, leader, availability, excelData):
         self.type = "member"
         self.name = name # string
         self.instrument = set(instrument.replace(' ', '').split(',')) # instrument
@@ -49,9 +49,9 @@ class bab_member:
         self.groups = []
 
         # EXCEL DATA
-        self.excel_data = []
-        for line in excel_data:
-            self.excel_data.append(line)
+        self.excelData = []
+        for line in excelData:
+            self.excelData.append(line)
 
     def display(self):
         print("name: ", self.name, "\ninstrument: ", self.
@@ -218,6 +218,8 @@ def calculate_compatibility(member_list, group_list):
             continue
 
         else: find_most_compatible(member, member_list, group_list)
+
+        add_instrument_compatibility(member)
         #print("MOST COMPATIBLE MEMBER / GROUP: " + member.mostCompatible.name + " SCORE:" + str(member.compatibilityScore))
 
 # Updates this member's compatiblity_list
@@ -301,7 +303,7 @@ def sort_memberlist_by_compatibility(member_list):
 # if member.mostCompatible is a person, form a new group
 # if member.mostCompatible is a group, add them to it
 def place_member(member, group_list):
-    print("Member: " + member.name + " Member compatibility: " + member.mostCompatible.name + "\nType:" + member.mostCompatible.type)
+    print("Member: " + member.name + " Member compatibility: " + member.mostCompatible.name + "\nType:" + member.mostCompatible.type + " Score: " + str(member.compatibilityScore))
     # if the most compatible person is a member, form a new group
     if (member.mostCompatible.type == "member"):
         group_id = len(group_list)
@@ -324,6 +326,17 @@ def place_member(member, group_list):
         register_to_group(member, group)
 
     member.placed = True
+
+# Tie breaker compatibility point calculation for people with the highest scores
+# Additional points based on number of roles for higher priority assignment
+# 1 role = +3, 2 roles = +2, 3 roles = +1, 4 roles = 0
+def add_instrument_compatibility(member):
+    if (len(member.roles) == 1): member.compatibilityScore += 3
+    elif (len(member.roles) == 2): member.compatibilityScore += 2
+    elif (len(member.roles) == 3): member.compatibilityScore += 1
+
+# Algorithm / loop logic 
+######################################################
 
 # checks and returns if there are still members who have not been placed
 # return True if all members are placed
@@ -402,28 +415,18 @@ def main():
     
     print("DONE!")
 
-    for member in member_list:
-        for line in member.excel_data:
-            print(line)
-
-    #TODO: EXCEL OUTPUT OF SCRIPT
-
     for group in group_list:
+        dataArray = []
+        #dataArray = [[0]*len(group.members)]*len(member_list[0].excelData)
         group.display()
-        with pandas.ExcelWriter('BABgroups.xlsx', engine='xlsxwriter') as writer:
-            dataframe = 0
-            colData = []
-            for member, colIndex in enumerate(group.members):
-                for line in member.excel_data:
-                    colData[colIndex]
-                    
-                dataframe = pandas.DataFrame([line])    
-                    
-                dataframe.to_excel(writer, sheet_name=group.name)
+        for member in enumerate(group.members):
+            dataArray.append(member.excelData)
+
+        df1 = pandas.DataFrame(data for data in dataArray)
+
+        with pandas.ExcelWriter('BABgroups.xlsx', engine='openpyxl', mode='a', if_sheet_exists='replace') as writer:
+                df1.to_excel(writer, sheet_name=group.name)
 
 
-#group sorting algorithm
-#form each group starting with a drummer
-    
 if __name__ == "__main__":
     main()
