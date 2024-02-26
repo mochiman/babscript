@@ -303,7 +303,7 @@ def sort_memberlist_by_compatibility(member_list):
 # if member.mostCompatible is a person, form a new group
 # if member.mostCompatible is a group, add them to it
 def place_member(member, group_list):
-    print("Member: " + member.name + " Member compatibility: " + member.mostCompatible.name + "\nType:" + member.mostCompatible.type + " Score: " + str(member.compatibilityScore))
+    print("Member: " + member.name + " Member compatibility: " + member.mostCompatible.name + "\nType:" + member.mostCompatible.type + " Score: " + str(member.compatibilityScore) + " Availability: " + str(member.availability))
     # if the most compatible person is a member, form a new group
     if (member.mostCompatible.type == "member"):
         group_id = len(group_list)
@@ -387,7 +387,7 @@ def main():
         csvFile = csv.reader(file)
         for lines in csvFile:
             if (lines[0] == "Timestamp"): continue
-            member_list.append(bab_member(lines[1], lines[2], lines[3], lines[4], int(lines[5]), lines))
+            member_list.append(bab_member(lines[1], lines[2], lines[3], lines[4], int(lines[8]), lines))
             #print(lines) 
             #print("\n")
 
@@ -419,7 +419,7 @@ def main():
         dataArray = []
         #dataArray = [[0]*len(group.members)]*len(member_list[0].excelData)
         group.display()
-        for member in enumerate(group.members):
+        for member in group.members:
             dataArray.append(member.excelData)
 
         df1 = pandas.DataFrame(data for data in dataArray)
