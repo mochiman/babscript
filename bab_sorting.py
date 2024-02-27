@@ -1,3 +1,9 @@
+# bab_sorting
+# 
+# 1 - 
+# 2 -
+# 3 -
+
 import sys
 import csv
 import pandas
@@ -5,6 +11,8 @@ import pandas
 LEADER_STRING_0 = "I go with the flow"
 LEADER_STRING_1 = "I don't usually lead, but I'm comfortable speaking up and talking about my ideas"
 LEADER_STRING_2 = "I usually take charge"
+
+BAB_START_NUMBER = 36
 
 
 # CLASSES
@@ -16,7 +24,7 @@ class bab_member:
         self.name = name # string
         self.instrument = set(instrument.replace(' ', '').split(',')) # instrument
         
-        # possible roles they can fill, based on instrument
+        # ROLE SETTINGS
         self.roles = set()
         if ('Drums' in self.instrument):
             self.roles.add("Drums")
@@ -49,6 +57,7 @@ class bab_member:
         self.groups = []
 
         # EXCEL DATA
+        # For exporting at the end
         self.excelData = []
         for line in excelData:
             self.excelData.append(line)
@@ -57,24 +66,19 @@ class bab_member:
         print("name: ", self.name, "\ninstrument: ", self.
               instrument, "\ngenre: ", self.genre, '\navailability: ', self.availability, '\n')
         
-    def get_compatibility(self, member):
-        crossover = list(self.genre & member.genre)
-        print("Compatible genres: ", crossover, "\nCount: ", len(crossover), "\n")
 
-        
-    def display_compatiblity(self):
-        print("Compatibility: ", self.compatiblity)
-        
 # A group / band formed by members
 class bab_group:
     def __init__(self, name):
         self.type = "group"
         self.name = name
-        self.drums = False #drums only
-        self.bass = False #bass only
+
+        #roles
+        self.drums = False  # drums only
+        self.bass = False   # bass only
         self.rhythm = False # guitar, keyboard
         self.melody = False # guitar, keyboard, vocals
-        self.etc = False # whatever else
+        self.etc = False    # whatever else
         self.members = []
         self.full = False
 
@@ -116,16 +120,9 @@ class bab_group:
             return True
         
         return False
-    
-    # register a member in the group
-    def register(self, member): 
-        self.members.append(member)
-        member.availability = member.availability - 1
-        member.groups.append(self)
-        if len(self.members) == 4: self.full = True
 
     # get compatilbilty in the group based on similar genres
-    def get_compatiblity(self):
+    def get_compatibility(self):
         crossover = self.members[0].genre & self.members[1].genre
         for count, member in enumerate(self.members):
             crossover & member.genre
@@ -138,8 +135,6 @@ class bab_group:
         for count, member in enumerate(self.members):
             crossover & member.genre
         return crossover
-
-
 
     def display(self):
         display_string = self.name + "\nDrums:  "
@@ -159,9 +154,6 @@ class bab_group:
         display_string += "\n"
         print(display_string)
         #print(self.name, "\nDrums: ", self.drums.name, "\nBass: ", self.bass.name, "\nRhythm: ", self.rhythm.name, "\nMelody: ", self.melody.name, "\n")
-
-    def count(self):
-        return len(self.members)
     
     # returns compatibility of this group with the current member
     # return < 0 for compatibiltiy score
@@ -178,12 +170,11 @@ class bab_group:
             return -1
         
         # otherwise compare compatibility
-        compatiblity = 0
+        compatibility = 0
         for group_member in self.members:
-            compatiblity += (len(list(member.genre & group_member.genre)))
+            compatibility += (len(list(member.genre & group_member.genre)))
 
-        return compatiblity
-
+        return compatibility
 
     
 # EXTERNAL FUNCTIONS
@@ -202,97 +193,91 @@ def create_compatibility_list(member_list):
         for id, compatible_member in enumerate(member_list):
             # if this is the same member, skip
             if member.name != compatible_member.name:
-                member.compatiblity[id] = (len(list(member.genre & compatible_member.genre)))
+                member.compatibility[id] = (len(list(member.genre & compatible_member.genre)))
 
-        # sort the compatiblity dictionary members based on highest compatibility
-        member.compatibility = dict(sorted(member.compatiblity.items(), key=lambda item:item[1], reverse=True))
+        # sort the compatibility dictionary members based on highest compatibility
+        member.compatibility = dict(sorted(member.compatibility.items(), key=lambda item:item[1], reverse=True))
 
+# calculates the compatibility between each member and group list
+# and updates each member's mostCompatibleMember and compatibilityScore property
 def calculate_compatibility(member_list, group_list):
     for member in member_list:
         member.compatibilityScore = -1
-        # print(member.name)
-        #member.display()
 
-        # skip if availability is 0
+        # skip if availability is 0 or member is already placed
         if (member.availability == 0 or member.placed == True):
             continue
 
         else: find_most_compatible(member, member_list, group_list)
 
         add_instrument_compatibility(member)
-        #print("MOST COMPATIBLE MEMBER / GROUP: " + member.mostCompatible.name + " SCORE:" + str(member.compatibilityScore))
 
-# Updates this member's compatiblity_list
+# Updates this member's compatibility_list
 def find_most_compatible(member, member_list, group_list):
-    # find max compatiblity
-    # do members list first
-    # Member list ie. making new groups is only available as long as we are below the max number of possible grousp
+    # find max compatibility
+    # Compare members with other members to find most compatible member
     for compatible_member in member_list:
         if (compatible_member == member or compatible_member.availability == 0): continue
 
-        compatiblity = (len(list(member.genre & compatible_member.genre)))
+        compatibility = (len(list(member.genre & compatible_member.genre)))
         
-        # If this current compatible member has a higher compatiblity,
+        # If this current compatible member has a higher compatibility,
         # replace the mostCompatible member and update compatiblitiy score
-        if (compatiblity > member.compatibilityScore):
+        if (compatibility > member.compatibilityScore):
             # check whether or not it is possible to form a group with this person
             # only cases would be if they only have one role and both fufill the same one
             if ((len(member.roles) == 1 and len(compatible_member.roles) == 1) & (list(member.roles)[0] == list(compatible_member.roles)[0])):
-                #print("SAME ROLE!!!")
                 continue
 
             member.mostCompatible = compatible_member
-            member.compatibilityScore = compatiblity
+            member.compatibilityScore = compatibility
 
-        # equal compatiblity, tie breaker check here (instrument priority)
+        # equal compatibility, tie breaker check here (instrument priority)
         # Tie breaker
-        elif (compatiblity == member.compatibilityScore):
+        elif (compatibility == member.compatibilityScore):
             # check if both players are leaders 
             # check if either player plays a drums / rhythm instrument
-            # re-calculate compatiblity score based on this (gives higher priority as well)
+            # re-calculate compatibility score based on this (gives higher priority as well)
 
             # higher priority instrument checking
             # put drums and bass together as higher priority
             if   ("Drums" in member.roles and "Bass" in compatible_member.roles) or \
-                 ("Bass" in member.roles and "Drums" in compatible_member.roles): compatiblity += 2 
+                 ("Bass" in member.roles and "Drums" in compatible_member.roles): compatibility += 2 
             
             # higher priority leadership checking
             if (member.leader == 2 and compatible_member.leader == 0) or \
-               (compatible_member.leader == 2 and member.leader == 0): compatiblity += 1            
+               (compatible_member.leader == 2 and member.leader == 0): compatibility += 1            
 
-            if (compatiblity > member.compatibilityScore): 
+            if (compatibility > member.compatibilityScore): 
                 #rint("Tie breaker successful")
                 member.mostCompatible = compatible_member
-                member.compatibilityScore = compatiblity
+                member.compatibilityScore = compatibility
 
-
+    # Compare members with group to find most compatible group for this member
+    # overrides member if more compatible group is found
     for compatible_group in group_list:
-        #print("Checking member " + member.name + "Compatibility with  group" + compatible_group.name)
-        compatiblity = compatible_group.check_compatibility(member)
-        #print("Compatibility: " + str(compatiblity))
-        if (compatiblity == -1): continue
+        compatibility = compatible_group.check_compatibility(member)
+        if (compatibility == -1): continue
 
-        # If this current compatible member has a higher compatiblity,
+        # If this current compatible member has a higher compatibility,
         # replace the mostCompatible member and update compatiblitiy score
-        if (compatiblity > member.compatibilityScore):
+        if (compatibility > member.compatibilityScore):
             # check whether or not it is possible to form a group with this person
             # only cases would be if they only have one role and both fufill the same one
             member.mostCompatible = compatible_group
-            member.compatibilityScore = compatiblity
+            member.compatibilityScore = compatibility
 
-        # equal compatiblity, tie breaker check here (instrument priority)
+        # equal compatibility, tie breaker check here (instrument priority)
         # Tie breaker
-        elif (compatiblity == member.compatibilityScore):
-            #print("SAME COMPATIBILTIY SCORE FOR GROUP: " + compatible_group.name)
-            if (compatible_group.drums  == False) & ('Drums'  in member.roles): compatiblity += 2
-            elif (compatible_group.bass  == False) & ('Bass'  in member.roles): compatiblity += 1
+        elif (compatibility == member.compatibilityScore):
+            if (compatible_group.drums  == False) & ('Drums'  in member.roles): compatibility += 2
+            elif (compatible_group.bass  == False) & ('Bass'  in member.roles): compatibility += 1
             
-            if (compatiblity > member.compatibilityScore):
-                #print("Tie breaker successful")
+            if (compatibility > member.compatibilityScore):
                 # check whether or not it is possible to form a group with this person
                 # only cases would be if they only have one role and both fufill the same one
                 member.mostCompatible = compatible_group
-                member.compatibilityScore = compatiblity
+                member.compatibilityScore = compatibility
 
 
 # sorts the member list based on highest compatibility score
@@ -308,7 +293,7 @@ def place_member(member, group_list):
     if (member.mostCompatible.type == "member"):
         group_id = len(group_list)
         # try making new group with member
-        new_group = bab_group("BAB" + str(group_id))
+        new_group = bab_group("BAB" + str(group_id + BAB_START_NUMBER))
         print("CREATED NEW GROUP: " + new_group.name)
 
         new_group.add_member(member)
@@ -335,10 +320,9 @@ def add_instrument_compatibility(member):
     elif (len(member.roles) == 2): member.compatibilityScore += 2
     elif (len(member.roles) == 3): member.compatibilityScore += 1
 
-# Algorithm / loop logic 
+# Algorithm / loop logic functions
 ######################################################
-
-# checks and returns if there are still members who have not been placed
+# Checks and returns if there are still members who have not been placed
 # return True if all members are placed
 # returns False if there are still members who need to be placed
 def all_members_are_placed(member_list):
@@ -348,6 +332,7 @@ def all_members_are_placed(member_list):
 
         return True
 
+# Checks if any members still availability
 def members_have_availability(member_list):
         for member in member_list:
             if member.availability > 0: 
@@ -355,28 +340,21 @@ def members_have_availability(member_list):
 
         return False
 
+# resets member placement if they still have availability
+# to allow for future placements in next loop iteration
 def refresh_placement(member_list):
     for member in member_list:
         # Reset placement only if member still has availability
         if (member.availability > 0): member.placed = False 
 
 def main():
-
-    
     member_list = []
     group_list = []
 
-    # sorting alg
-    # creating a number of groups based on avaliablity of drummers 
-    # add bass based on highest genre overlap
-    # add melody, prioritizing vocalists 
-    # add rhythm, guitar / piano / whatever
-    # also prioritize in terms of how many bands you're in
 
 
     # create our membber list
     
-    print(len(sys.argv))
     if (len (sys.argv) != 2): 
         print("NO FORM RESPONSE ARGUMENT PROVIDED TO SCRIPT. Re-rerunscript using python3 bab_sorting.py form_responses.csv")
         return -1
@@ -401,7 +379,7 @@ def main():
     # TODO: implement this limit
 
     # when making a new BAB group, we will check whether or not we have reached the upper bound of groups (Maybe)
-    # ie. this will take place in the compatiblity function calculation, ie. members will no longer show up as possible new group forms if
+    # ie. this will take place in the compatibility function calculation, ie. members will no longer show up as possible new group forms if
     # the current size of groups is larger than our upper bound
 
 
@@ -417,7 +395,6 @@ def main():
 
     for group in group_list:
         dataArray = []
-        #dataArray = [[0]*len(group.members)]*len(member_list[0].excelData)
         group.display()
         for member in group.members:
             dataArray.append(member.excelData)
